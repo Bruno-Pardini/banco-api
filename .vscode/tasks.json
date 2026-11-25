@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "docker: levantar", "type": "shell", "command": "docker compose up -d --build", "problemMatcher": [] },
+    { "label": "docker: logs api", "type": "shell", "command": "docker compose logs -f api", "problemMatcher": [] },
+    { "label": "docker: migrar", "type": "shell", "command": "docker compose exec api alembic upgrade head", "problemMatcher": [] },
+    { "label": "docker: datos demo", "type": "shell", "command": "docker compose exec api python -m app.scripts.seed", "problemMatcher": [] },
+    { "label": "docker: bajar", "type": "shell", "command": "docker compose down", "problemMatcher": [] },
+    { "label": "pytest", "type": "shell", "command": "${workspaceFolder}/.venv/bin/pytest -q", "group": "test", "problemMatcher": [] }
+  ]
+}

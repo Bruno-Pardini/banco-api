@@ -1,0 +1,128 @@
+### Pruebas con la extensión REST Client (humao.rest-client): clic en "Send Request" sobre cada bloque.
+@base = http://localhost:8000
+
+### Salud
+GET {{base}}/health
+
+### 1) SolTransf (8) del Paso 8 → APROBADA (TRANSFERENCIA)
+POST {{base}}/api/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "RES-2026-000001",
+  "sistema_solicitante": "RES",
+  "fecha_hora": "2026-11-15T09:04:12-07:00",
+  "cuenta_origen": "3514126802",
+  "cuenta_destino": "8103021410",
+  "titular_origen": "Mariana Salcido Ruiz",
+  "importe": 16650.00,
+  "concepto": "Pago reservación SMR-2026-00142"
+}
+
+### 2) Mismo folio otra vez → mismo comprobante, cabecera X-Solicitud-Repetida: true
+POST {{base}}/api/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "RES-2026-000001", "sistema_solicitante": "RES", "fecha_hora": "2026-11-15T09:04:12-07:00",
+  "cuenta_origen": "3514126802", "cuenta_destino": "8103021410", "titular_origen": "Mariana Salcido Ruiz", "importe": 1.00
+}
+
+### 3) R03 · fondos insuficientes
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "RES-2026-000002", "sistema_solicitante": "RES", "fecha_hora": "2026-11-17T10:41:00-07:00",
+  "cuenta_origen": "7448067658", "cuenta_destino": "8103021410", "titular_origen": "Lucía Fimbres Ochoa", "importe": 3800.00
+}
+
+### 4) R04 · titular no coincide
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "SRE-2026-000002", "sistema_solicitante": "SRE", "fecha_hora": "2026-11-16T18:09:00-07:00",
+  "cuenta_origen": "2921815266", "cuenta_destino": "1303715383", "titular_origen": "Otra Persona", "importe": 420.00
+}
+
+### 5) R01 · cuenta origen inactiva
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "SPA-2026-000003", "sistema_solicitante": "SPA", "fecha_hora": "2026-11-19T09:12:00-07:00",
+  "cuenta_origen": "9000000001", "cuenta_destino": "7888110888", "titular_origen": "Cliente de prueba inactivo", "importe": 300.00
+}
+
+### 6) R06 · importe en cero (se registra y responde 200)
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "VST-2026-000001", "sistema_solicitante": "VST", "fecha_hora": "2026-11-18T18:26:00-07:00",
+  "cuenta_origen": "1193833709", "cuenta_destino": "5520190034", "titular_origen": "Ricardo Moreno Haros", "importe": 0
+}
+
+### 7) RETIRO (cuenta_destino vacía) y DEPOSITO (destino = origen)
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "CIO-2026-000001", "sistema_solicitante": "CIO", "fecha_hora": "2026-11-21T12:05:00-07:00",
+  "cuenta_origen": "5889592713", "cuenta_destino": "", "titular_origen": "Grupo Turístico del Noroeste", "importe": 500.00
+}
+
+###
+POST {{base}}/api/v1/transacciones
+Content-Type: application/json
+
+{
+  "folio_solicitud": "CIO-2026-000002", "sistema_solicitante": "CIO", "fecha_hora": "2026-11-21T12:06:00-07:00",
+  "cuenta_origen": "5889592713", "cuenta_destino": "5889592713", "titular_origen": "Grupo Turístico del Noroeste", "importe": 500.00
+}
+
+### 8) 400 · el cuerpo no es JSON válido (no se registra)
+POST {{base}}/api/transacciones
+Content-Type: application/json
+
+{ "folio_solicitud": "RES-2026-000009",
+
+### IG 6.1 · Bitácora (filtros: estatus, tipo, sistema, codigo_rechazo, q, desde, hasta, pagina, tamano)
+GET {{base}}/api/v1/transacciones?estatus=RECHAZADA&pagina=1&tamano=20
+
+### Detalle con movimientos (404 si no existe)
+GET {{base}}/api/v1/transacciones/OP-2026-000001
+
+### Catálogo R01–R06
+GET {{base}}/api/v1/codigos-rechazo
+
+### Cuentas
+GET {{base}}/api/v1/cuentas/3514126802
+
+###
+GET {{base}}/api/v1/cuentas/3514126802/movimientos
+
+### Alta de cliente (201) y cuenta (201)
+POST {{base}}/api/v1/clientes
+Content-Type: application/json
+
+{ "nombre": "Ana Valenzuela Duarte", "tipo_cliente": "HUESPED", "correo": "ana@example.com" }
+
+###
+POST {{base}}/api/v1/cuentas
+Content-Type: application/json
+
+{ "numero_cuenta": "4000000001", "id_cliente": 8, "saldo_inicial": 2000.00 }
+
+### Inactivar cuenta (200)
+PATCH {{base}}/api/v1/cuentas/4000000001
+Content-Type: application/json
+
+{ "estatus": "INACTIVA" }
+
+### 422 · validación en endpoints de administración
+POST {{base}}/api/v1/cuentas
+Content-Type: application/json
+
+{ "numero_cuenta": "123", "id_cliente": 0 }
